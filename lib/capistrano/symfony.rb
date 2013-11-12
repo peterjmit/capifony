@@ -1,3 +1,4 @@
+require "capistrano/file-permissions"
 require "capistrano/composer"
 require "capistrano/symfony/dsl"
 

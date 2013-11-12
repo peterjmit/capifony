@@ -24,13 +24,6 @@ module Capistrano
           release_path.join(fetch(:app_config_path))
       end
 
-      def writable_dirs
-        linked_dirs = fetch(:linked_dirs)
-        fetch(:writable_dirs).map do |d|
-          linked_dirs.include?(d) ? shared_path.join(d) : release_path.join(d)
-        end
-      end
-
     end
   end
 end

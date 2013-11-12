@@ -34,52 +34,6 @@ namespace :deploy do
     end
   end
 
-  desc <<-DESC
-    Sets permissions for writable_dirs folders as described in the Symfony documentation
-    (http://symfony.com/doc/master/book/installation.html#configuration-and-setup)
-  DESC
-  task :set_permissions do
-    # next unless fetch :use_set_permissions
-    on roles :app do
-      writable_dirs.each do |path|
-        unless test "[ -d #{path} ]" or test "[ -e #{path} ]"
-          msg = "Cannot change permissions: #{path} is not a file or directory"
-          warn msg
-          fail Capistrano::FileNotFound, msg
-        end
-      end
-    end
-    invoke "deploy:set_permissions:#{fetch(:permission_method)}"
-  end
-
-  namespace :set_permissions do
-    task :chmod do
-      next unless any? :writable_dirs
-      # check for sudo test
-      on roles :app, reject: lambda { |h| h.properties.no_release } do
-        permissions = "allow delete,write,append,file_inherit,directory_inherit"
-
-        execute :chmod, "+a", fetch(:user), permissions, *writable_dirs
-        execute :chmod, "+a", fetch(:webserver_user), permissions, *writable_dirs
-      end
-    end
-    task :acl do
-      next unless any? :writable_dirs
-      on roles :app, reject: lambda { |h| h.properties.no_release } do |host|
-        webserver_user = fetch(:webserver_user)
-        execute :setfacl, "-R", "-m u:#{host.user}:rwX", "-m u:#{webserver_user}:rwX", *writable_dirs
-        execute :setfacl, "-dR", "-m u:#{host.user}:rwx -m u:#{webserver_user}:rwx", *writable_dirs
-      end
-    end
-    task :chown do
-      next unless any? :writable_dirs
-      next unless fetch :use_sudo, false
-      on roles :app, reject: lambda { |h| h.properties.no_release } do
-        execute :chown, "-R", fetch(:webserver_user), *writable_dirs
-      end
-    end
-  end
-
   namespace :linked_parameters do
     desc "Check if parameters file is linked in shared directory"
     task :check do
@@ -132,7 +86,7 @@ namespace :deploy do
 
   task :updating do
     invoke "deploy:create_cache_dir"
-    invoke "deploy:set_permissions"
+    invoke "deploy:set_permissions:acl"
     invoke "deploy:linked_parameters:copy_template"
   end
 
